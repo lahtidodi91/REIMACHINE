@@ -1,9 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import './App.css';
 import { FaHome, FaBuilding, FaCalculator, FaDollarSign, FaChartLine, FaTrendingUp } from 'react-icons/fa';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const dealTypes = {
   residential: [
@@ -64,21 +62,19 @@ const initialFormData = {
   hasBaloonPayment: false,
   balloonAmount: '',
   balloonTerm: '',
-  paymentType: 'principal_interest', // 'principal_interest', 'interest_only', 'partial_amortization'
+  paymentType: 'principal_interest',
   amortizationPeriod: '',
   
   // Creative Financing Specific
-  existingMortgageBalance: '', // For Subject-To, Wraparound
+  existingMortgageBalance: '',
   existingMortgagePayment: '',
   existingMortgageRate: '',
-  sellerFinanceTerms: '',
-  leaseAmount: '', // For Lease Options
+  leaseAmount: '',
   optionFee: '',
   optionPeriod: '',
   rentCredit: '',
-  performanceMetrics: '', // For Performance Mortgage
-  equityShare: '', // For Equity Sharing
-  trustStructure: '', // For Trust Acquisition
+  performanceMetrics: '',
+  equityShare: '',
   
   // Income (for rentals)
   monthlyRent: '',
@@ -153,7 +149,7 @@ function RealEstateCalculator() {
       switch (selectedPurchaseMethod) {
         case 'subject_to':
           monthlyPI = data.existingMortgagePayment || 0;
-          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0); // Minimal cash
+          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
           break;
           
         case 'seller_finance':
@@ -181,32 +177,6 @@ function RealEstateCalculator() {
           actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
           calculations.rentCredit = data.rentCredit || 0;
           calculations.optionPeriod = data.optionPeriod || 0;
-          break;
-          
-        case 'contract_deed':
-        case 'land_contract':
-          if (data.loanAmount > 0 && data.interestRate > 0) {
-            const monthlyRate = data.interestRate / 100 / 12;
-            const loanMonths = data.loanTerm * 12;
-            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
-                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
-          }
-          actualCashInvested = data.downPayment; // Usually lower down payment
-          break;
-          
-        case 'equity_sharing':
-          if (data.loanAmount > 0 && data.interestRate > 0) {
-            const monthlyRate = data.interestRate / 100 / 12;
-            const loanMonths = data.loanTerm * 12;
-            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
-                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
-          }
-          calculations.equitySharePercentage = data.equityShare || 0;
-          break;
-          
-        case 'performance_mortgage':
-          // Performance-based payment calculation
-          monthlyPI = data.monthlyRent > 0 ? (data.monthlyRent * (data.performanceMetrics / 100)) : 0;
           break;
           
         case 'cash':
@@ -242,9 +212,8 @@ function RealEstateCalculator() {
       const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
       const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
       const annualCashFlow = monthlyCashFlow * 12;
-      const totalCashInvested = actualCashInvested;
       
-      // Calculate balloon payment amount if applicable
+      // Calculate balloon payment if applicable
       let balloonPaymentAmount = 0;
       if (data.hasBaloonPayment && data.loanAmount > 0 && selectedPurchaseMethod !== 'subject_to') {
         if (data.paymentType === 'interest_only') {
@@ -268,8 +237,7 @@ function RealEstateCalculator() {
       calculations.monthlyCashFlow = monthlyCashFlow;
       calculations.annualCashFlow = annualCashFlow;
       calculations.capRate = data.purchasePrice > 0 ? ((monthlyIncome * 12 - monthlyExpenses * 12) / data.purchasePrice) * 100 : 0;
-      calculations.cashOnCashReturn = totalCashInvested > 0 ? (annualCashFlow / totalCashInvested) * 100 : 0;
-      calculations.totalROI = totalCashInvested > 0 ? (annualCashFlow / totalCashInvested) * 100 : 0;
+      calculations.cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
       calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
       calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
       calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
@@ -277,8 +245,6 @@ function RealEstateCalculator() {
       // Purchase method specific data
       calculations.purchaseMethod = selectedPurchaseMethod;
       calculations.actualCashInvested = actualCashInvested;
-      
-      // Balloon payment specific metrics
       calculations.hasBaloonPayment = data.hasBaloonPayment;
       calculations.balloonPaymentAmount = balloonPaymentAmount;
       calculations.balloonTerm = data.balloonTerm;
@@ -289,17 +255,13 @@ function RealEstateCalculator() {
       calculations.breakEvenRent = totalMonthlyExpenses;
       calculations.monthlyIncome = monthlyIncome;
       calculations.totalMonthlyExpenses = totalMonthlyExpenses;
-      calculations.totalCashInvested = totalCashInvested;
+      calculations.totalCashInvested = actualCashInvested;
       
-      // Balloon payment planning
       if (data.hasBaloonPayment) {
         calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
-        calculations.totalCashNeededAtBalloon = balloonPaymentAmount;
-        calculations.balloonPaymentRatio = data.purchasePrice > 0 ? (balloonPaymentAmount / data.purchasePrice) * 100 : 0;
       }
       
     } else if (selectedDealType === 'flip') {
-      // Fix & Flip Calculations
       const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
       const netProfit = data.arv - totalInvestment - data.sellingCosts;
       const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
@@ -312,7 +274,6 @@ function RealEstateCalculator() {
       calculations.purchaseMethod = selectedPurchaseMethod;
       
     } else if (selectedDealType === 'wholesale') {
-      // Wholesale Calculations
       const profit = data.assignmentFee;
       const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
       
@@ -409,6 +370,72 @@ function RealEstateCalculator() {
     </div>
   );
 
+  const renderCreativeFinancingInputs = () => {
+    if (!showCreativeFinancing) return null;
+
+    const renderMethodSpecificFields = () => {
+      switch (selectedPurchaseMethod) {
+        case 'subject_to':
+          return (
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <h4 className="font-semibold text-red-800 mb-3">🔄 Subject-To Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
+                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
+                {renderInputField('Existing Interest Rate', 'existingMortgageRate', 'number', '%')}
+                {renderInputField('Option Fee (if any)', 'optionFee')}
+              </div>
+              <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-700">
+                <strong>⚠️ Legal Notice:</strong> Subject-To deals carry significant legal and financial risks. 
+                Consult with a qualified attorney before proceeding.
+              </div>
+            </div>
+          );
+        case 'seller_finance':
+          return (
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-3">🤝 Seller Financing Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderInputField('Seller Finance Amount', 'loanAmount')}
+                {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
+                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
+                {renderInputField('Down Payment to Seller', 'downPayment')}
+              </div>
+            </div>
+          );
+        case 'lease_option':
+        case 'lease_purchase':
+          return (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-3">📋 Lease Option Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderInputField('Monthly Lease Amount', 'leaseAmount')}
+                {renderInputField('Option Fee', 'optionFee')}
+                {renderInputField('Option Period (Years)', 'optionPeriod', 'number', '')}
+                {renderInputField('Monthly Rent Credit', 'rentCredit')}
+              </div>
+            </div>
+          );
+        default:
+          return (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-semibold text-gray-700 mb-3">Creative Financing Selected</h4>
+              <p className="text-sm text-gray-600">
+                {purchaseMethods.creative.find(m => m.id === selectedPurchaseMethod)?.description}
+              </p>
+            </div>
+          );
+      }
+    };
+
+    return (
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">Creative Financing Details</h3>
+        {renderMethodSpecificFields()}
+      </div>
+    );
+  };
+
   const renderRentalInputs = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div className="bg-green-50 p-4 rounded-lg lg:col-span-3">
@@ -437,440 +464,19 @@ function RealEstateCalculator() {
     </div>
   );
 
-  const renderFlipInputs = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-yellow-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-yellow-800 mb-3">Rehab & Costs</h4>
-        {renderInputField('Rehab Cost', 'rehabCost')}
-        {renderInputField('Holding Costs', 'holdingCosts')}
-        {renderInputField('Selling Costs', 'sellingCosts')}
-      </div>
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-green-800 mb-3">Sale</h4>
-        {renderInputField('After Repair Value (ARV)', 'arv')}
-      </div>
-    </div>
-  );
-
-  const renderCreativeFinancingInputs = () => {
-    if (!showCreativeFinancing) return null;
-
-    const renderMethodSpecificFields = () => {
-      switch (selectedPurchaseMethod) {
-        case 'subject_to':
-          return (
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-              <h4 className="font-semibold text-red-800 mb-3 flex items-center">
-                🔄 Subject-To Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Existing Interest Rate', 'existingMortgageRate', 'number', '%')}
-                {renderInputField('Option Fee (if any)', 'optionFee')}
-              </div>
-              <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-700">
-                <strong>⚠️ Legal Notice:</strong> Subject-To deals carry significant legal and financial risks. 
-                Consult with a qualified attorney before proceeding.
-              </div>
-            </div>
-          );
-
-        case 'seller_finance':
-          return (
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-                🤝 Seller Financing Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Seller Finance Amount', 'loanAmount')}
-                {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-                {renderInputField('Down Payment to Seller', 'downPayment')}
-              </div>
-            </div>
-          );
-
-        case 'wraparound':
-          return (
-            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
-                🌯 Wraparound Mortgage Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Existing Interest Rate', 'existingMortgageRate', 'number', '%')}
-                {renderInputField('Wraparound Loan Amount', 'loanAmount')}
-                {renderInputField('Wraparound Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Wraparound Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-            </div>
-          );
-
-        case 'lease_option':
-        case 'lease_purchase':
-          return (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-                📋 Lease Option Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Monthly Lease Amount', 'leaseAmount')}
-                {renderInputField('Option Fee', 'optionFee')}
-                {renderInputField('Option Period (Years)', 'optionPeriod', 'number', '')}
-                {renderInputField('Monthly Rent Credit', 'rentCredit')}
-                {renderInputField('Purchase Price', 'purchasePrice')}
-              </div>
-            </div>
-          );
-
-        case 'contract_deed':
-        case 'land_contract':
-          return (
-            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
-                📜 Contract for Deed Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Contract Price', 'purchasePrice')}
-                {renderInputField('Down Payment', 'downPayment')}
-                {renderInputField('Contract Balance', 'loanAmount')}
-                {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-purple-100 rounded text-sm text-purple-700">
-                <strong>Note:</strong> Title transfers only after full payment is made.
-              </div>
-            </div>
-          );
-
-        case 'equity_sharing':
-          return (
-            <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-              <h4 className="font-semibold text-teal-800 mb-3 flex items-center">
-                🤝 Equity Sharing Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Your Equity Share', 'equityShare', 'number', '%')}
-                {renderInputField('Your Cash Investment', 'downPayment')}
-                {renderInputField('Total Purchase Price', 'purchasePrice')}
-                {renderInputField('Partner Contribution', 'loanAmount')}
-              </div>
-            </div>
-          );
-
-        case 'performance_mortgage':
-          return (
-            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-              <h4 className="font-semibold text-indigo-800 mb-3 flex items-center">
-                📈 Performance Mortgage Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Base Payment %', 'performanceMetrics', 'number', '%')}
-                {renderInputField('Performance Threshold', 'monthlyRent')}
-                {renderInputField('Loan Amount', 'loanAmount')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-indigo-100 rounded text-sm text-indigo-700">
-                <strong>Note:</strong> Payment amounts vary based on property performance metrics (NOI, occupancy, etc.).
-              </div>
-            </div>
-          );
-
-        case 'master_lease':
-          return (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
-                🏢 Master Lease Option Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Monthly Master Lease', 'leaseAmount')}
-                {renderInputField('Number of Units', 'units', 'number', '')}
-                {renderInputField('Option Fee', 'optionFee')}
-                {renderInputField('Option Period (Years)', 'optionPeriod', 'number', '')}
-                {renderInputField('Total Purchase Price', 'purchasePrice')}
-              </div>
-            </div>
-          );
-
-        case 'trust_acquisition':
-          return (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                🏛️ Trust Acquisition Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Trust Purchase Price', 'purchasePrice')}
-                {renderInputField('Trust Setup Costs', 'optionFee')}
-                {renderInputField('Monthly Trust Payments', 'leaseAmount')}
-                {renderInputField('Trust Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-gray-100 rounded text-sm text-gray-700">
-                <strong>Note:</strong> Property is held in trust structure for tax and legal benefits.
-              </div>
-            </div>
-          );
-
-        case 'hybrid':
-          return (
-            <div className="bg-gradient-to-r from-red-50 to-green-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                🔀 Hybrid Deal Structure
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Seller Finance Amount', 'loanAmount')}
-                {renderInputField('Seller Finance Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Down Payment', 'downPayment')}
-                {renderInputField('Option Fee', 'optionFee')}
-              </div>
-              <div className="mt-3 p-3 bg-yellow-100 rounded text-sm text-yellow-700">
-                <strong>Example:</strong> Subject-To existing mortgage + Seller financing for equity difference.
-              </div>
-            </div>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">Creative Financing Details</h3>
-        {renderMethodSpecificFields()}
-      </div>
-    );
-  };
-
-  const renderCommercialInputs = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div className="bg-blue-50 p-4 rounded-lg lg:col-span-3">
-        <h4 className="font-semibold text-blue-800 mb-3">Commercial Details</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {renderInputField('Number of Units', 'units', 'number', '')}
-          {renderInputField('Avg Rent per Unit', 'avgRentPerUnit')}
-          {renderInputField('Operating Expenses', 'operatingExpenses')}
-          {renderInputField('Net Operating Income', 'noi')}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCreativeFinancingInputs = () => {
-    if (!showCreativeFinancing) return null;
-
-    const renderMethodSpecificFields = () => {
-      switch (selectedPurchaseMethod) {
-        case 'subject_to':
-          return (
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-              <h4 className="font-semibold text-red-800 mb-3 flex items-center">
-                🔄 Subject-To Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Existing Interest Rate', 'existingMortgageRate', 'number', '%')}
-                {renderInputField('Option Fee (if any)', 'optionFee')}
-              </div>
-              <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-700">
-                <strong>⚠️ Legal Notice:</strong> Subject-To deals carry significant legal and financial risks. 
-                Consult with a qualified attorney before proceeding.
-              </div>
-            </div>
-          );
-
-        case 'seller_finance':
-          return (
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-                🤝 Seller Financing Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Seller Finance Amount', 'loanAmount')}
-                {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-                {renderInputField('Down Payment to Seller', 'downPayment')}
-              </div>
-            </div>
-          );
-
-        case 'wraparound':
-          return (
-            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
-                🌯 Wraparound Mortgage Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Existing Interest Rate', 'existingMortgageRate', 'number', '%')}
-                {renderInputField('Wraparound Loan Amount', 'loanAmount')}
-                {renderInputField('Wraparound Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Wraparound Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-            </div>
-          );
-
-        case 'lease_option':
-        case 'lease_purchase':
-          return (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-                📋 Lease Option Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Monthly Lease Amount', 'leaseAmount')}
-                {renderInputField('Option Fee', 'optionFee')}
-                {renderInputField('Option Period (Years)', 'optionPeriod', 'number', '')}
-                {renderInputField('Monthly Rent Credit', 'rentCredit')}
-                {renderInputField('Purchase Price', 'purchasePrice')}
-              </div>
-            </div>
-          );
-
-        case 'contract_deed':
-        case 'land_contract':
-          return (
-            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
-                📜 Contract for Deed Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Contract Price', 'purchasePrice')}
-                {renderInputField('Down Payment', 'downPayment')}
-                {renderInputField('Contract Balance', 'loanAmount')}
-                {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-purple-100 rounded text-sm text-purple-700">
-                <strong>Note:</strong> Title transfers only after full payment is made.
-              </div>
-            </div>
-          );
-
-        case 'equity_sharing':
-          return (
-            <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-              <h4 className="font-semibold text-teal-800 mb-3 flex items-center">
-                🤝 Equity Sharing Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Your Equity Share', 'equityShare', 'number', '%')}
-                {renderInputField('Your Cash Investment', 'downPayment')}
-                {renderInputField('Total Purchase Price', 'purchasePrice')}
-                {renderInputField('Partner Contribution', 'loanAmount')}
-              </div>
-            </div>
-          );
-
-        case 'performance_mortgage':
-          return (
-            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-              <h4 className="font-semibold text-indigo-800 mb-3 flex items-center">
-                📈 Performance Mortgage Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Base Payment %', 'performanceMetrics', 'number', '%')}
-                {renderInputField('Performance Threshold', 'monthlyRent')}
-                {renderInputField('Loan Amount', 'loanAmount')}
-                {renderInputField('Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-indigo-100 rounded text-sm text-indigo-700">
-                <strong>Note:</strong> Payment amounts vary based on property performance metrics (NOI, occupancy, etc.).
-              </div>
-            </div>
-          );
-
-        case 'master_lease':
-          return (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
-                🏢 Master Lease Option Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Monthly Master Lease', 'leaseAmount')}
-                {renderInputField('Number of Units', 'units', 'number', '')}
-                {renderInputField('Option Fee', 'optionFee')}
-                {renderInputField('Option Period (Years)', 'optionPeriod', 'number', '')}
-                {renderInputField('Total Purchase Price', 'purchasePrice')}
-              </div>
-            </div>
-          );
-
-        case 'trust_acquisition':
-          return (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                🏛️ Trust Acquisition Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Trust Purchase Price', 'purchasePrice')}
-                {renderInputField('Trust Setup Costs', 'optionFee')}
-                {renderInputField('Monthly Trust Payments', 'leaseAmount')}
-                {renderInputField('Trust Term (Years)', 'loanTerm', 'number', '')}
-              </div>
-              <div className="mt-3 p-3 bg-gray-100 rounded text-sm text-gray-700">
-                <strong>Note:</strong> Property is held in trust structure for tax and legal benefits.
-              </div>
-            </div>
-          );
-
-        case 'hybrid':
-          return (
-            <div className="bg-gradient-to-r from-red-50 to-green-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                🔀 Hybrid Deal Structure
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderInputField('Existing Mortgage Balance', 'existingMortgageBalance')}
-                {renderInputField('Existing Monthly Payment', 'existingMortgagePayment')}
-                {renderInputField('Seller Finance Amount', 'loanAmount')}
-                {renderInputField('Seller Finance Rate', 'interestRate', 'number', '%')}
-                {renderInputField('Down Payment', 'downPayment')}
-                {renderInputField('Option Fee', 'optionFee')}
-              </div>
-              <div className="mt-3 p-3 bg-yellow-100 rounded text-sm text-yellow-700">
-                <strong>Example:</strong> Subject-To existing mortgage + Seller financing for equity difference.
-              </div>
-            </div>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">Creative Financing Details</h3>
-        {renderMethodSpecificFields()}
-      </div>
-    );
-  };
+  const formatCurrency = (value) => 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
+  
+  const formatPercent = (value) => `${(value || 0).toFixed(2)}%`;
 
   const renderResults = () => {
     if (!results) return null;
-
-    const formatCurrency = (value) => 
-      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
-    
-    const formatPercent = (value) => `${(value || 0).toFixed(2)}%`;
 
     if (selectedDealType === 'rental' || selectedDealType === 'brrrr' || selectedDealType === 'livein') {
       const chartData = [
         { name: 'Monthly Income', value: results.monthlyIncome || 0 },
         { name: 'Monthly Expenses', value: results.totalMonthlyExpenses || 0 },
         { name: 'Cash Flow', value: results.monthlyCashFlow || 0 }
-      ];
-
-      const metricsData = [
-        { name: 'Cap Rate', value: results.capRate },
-        { name: 'Cash-on-Cash', value: results.cashOnCashReturn },
-        { name: '1% Rule', value: results.onePercentRule }
       ];
 
       return (
@@ -881,7 +487,6 @@ function RealEstateCalculator() {
           </h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Key Metrics */}
             <div className="bg-white p-6 rounded-lg shadow">
               <h4 className="text-lg font-semibold mb-4 text-gray-800">Key Metrics</h4>
               <div className="space-y-3">
@@ -906,21 +511,18 @@ function RealEstateCalculator() {
                   <span className="font-bold text-gray-800">{formatPercent(results.cashOnCashReturn)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
-                  <span className="font-medium">1% Rule:</span>
-                  <span className={`font-bold ${results.onePercentRule >= 1 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatPercent(results.onePercentRule)}
+                  <span className="font-medium">Purchase Method:</span>
+                  <span className="font-bold text-gray-800">
+                    {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
+                      .find(m => m.id === results.purchaseMethod)?.label || 'Unknown'}
                   </span>
                 </div>
               </div>
               
-              {/* Balloon Payment Warning */}
               {results.hasBaloonPayment && (
                 <div className="mt-4 p-4 bg-orange-100 border border-orange-300 rounded-lg">
-                  <h5 className="font-semibold text-orange-800 mb-2 flex items-center">
-                    ⚠️ Balloon Payment Alert
-                  </h5>
+                  <h5 className="font-semibold text-orange-800 mb-2">⚠️ Balloon Payment Alert</h5>
                   <div className="text-sm text-orange-700 space-y-1">
-                    <p><strong>Payment Type:</strong> {results.paymentType.replace('_', ' ').toUpperCase()}</p>
                     <p><strong>Balloon Due:</strong> {results.balloonTerm} years</p>
                     <p><strong>Balloon Amount:</strong> {formatCurrency(results.balloonPaymentAmount)}</p>
                     <p><strong>Monthly Savings Needed:</strong> {formatCurrency(results.balloonPaymentPerMonth)}</p>
@@ -929,7 +531,6 @@ function RealEstateCalculator() {
               )}
             </div>
 
-            {/* Cash Flow Chart */}
             <div className="bg-white p-6 rounded-lg shadow">
               <h4 className="text-lg font-semibold mb-4 text-gray-800">Monthly Cash Flow</h4>
               <ResponsiveContainer width="100%" height={250}>
@@ -941,175 +542,45 @@ function RealEstateCalculator() {
                   <Bar dataKey="value" fill="#3B82F6" />
                 </BarChart>
               </ResponsiveContainer>
-              
-              {/* Payment Details */}
-              {results.hasBaloonPayment && (
-                <div className="mt-4 p-3 bg-gray-50 rounded">
-                  <h6 className="font-semibold text-gray-700 mb-2">Payment Structure</h6>
-                  <div className="text-sm text-gray-600">
-                    <p>Monthly P&I: {formatCurrency(results.monthlyPI)}</p>
-                    <p>Payment Type: {results.paymentType.replace('_', ' ')}</p>
-                    {results.paymentType === 'interest_only' && (
-                      <p className="text-orange-600 font-medium">
-                        ⚠️ Interest-only payments - Principal balance remains {formatCurrency(results.balloonPaymentAmount)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Additional Metrics */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-lg shadow text-center">
               <h5 className="font-semibold text-gray-600">Break-Even Rent</h5>
               <p className="text-2xl font-bold text-blue-600">{formatCurrency(results.breakEvenRent)}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h5 className="font-semibold text-gray-600">Gross Rent Multiplier</h5>
-              <p className="text-2xl font-bold text-green-600">{results.grossRentMultiplier?.toFixed(2) || '0'}</p>
+              <h5 className="font-semibold text-gray-600">Total Cash Invested</h5>
+              <p className="text-2xl font-bold text-purple-600">{formatCurrency(results.actualCashInvested)}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h5 className="font-semibold text-gray-600">Total Cash Invested</h5>
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(results.totalCashInvested)}</p>
-            </div>
-          </div>
-          
-          {/* Balloon Payment Planning Section */}
-          {results.hasBaloonPayment && (
-            <div className="mt-6 bg-white p-6 rounded-lg shadow">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
-                🎈 Balloon Payment Planning
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
-                    <span className="font-medium">Balloon Amount:</span>
-                    <span className="font-bold text-orange-600">{formatCurrency(results.balloonPaymentAmount)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded">
-                    <span className="font-medium">Due in:</span>
-                    <span className="font-bold text-red-600">{results.balloonTerm} years</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-                    <span className="font-medium">Monthly Savings Goal:</span>
-                    <span className="font-bold text-blue-600">{formatCurrency(results.balloonPaymentPerMonth)}</span>
-                  </div>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h6 className="font-semibold text-yellow-800 mb-2">Exit Strategy Options:</h6>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• Refinance before balloon due date</li>
-                    <li>• Sell property to pay balloon</li>
-                    <li>• Save monthly to pay balloon in cash</li>
-                    <li>• Negotiate loan extension with lender</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    if (selectedDealType === 'flip') {
-      const profitData = [
-        { name: 'Total Investment', value: results.totalInvestment },
-        { name: 'ARV', value: results.arv },
-        { name: 'Net Profit', value: results.netProfit }
-      ];
-
-      return (
-        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <FaTrendingUp className="mr-3 text-green-600" />
-            Fix & Flip Analysis
-          </h3>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800">Profit Analysis</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-                  <span className="font-medium">Total Investment:</span>
-                  <span className="font-bold text-blue-600">{formatCurrency(results.totalInvestment)}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-                  <span className="font-medium">After Repair Value:</span>
-                  <span className="font-bold text-green-600">{formatCurrency(results.arv)}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-                  <span className="font-medium">Net Profit:</span>
-                  <span className={`font-bold ${results.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(results.netProfit)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-                  <span className="font-medium">ROI:</span>
-                  <span className="font-bold text-purple-600">{formatPercent(results.roi)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800">Investment Breakdown</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={profitData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Bar dataKey="value" fill="#10B981" />
-                </BarChart>
-              </ResponsiveContainer>
+              <h5 className="font-semibold text-gray-600">1% Rule</h5>
+              <p className={`text-2xl font-bold ${results.onePercentRule >= 1 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatPercent(results.onePercentRule)}
+              </p>
             </div>
           </div>
         </div>
       );
     }
 
-    if (selectedDealType === 'wholesale') {
-      return (
-        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Wholesale Analysis</h3>
-          
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <h4 className="font-semibold text-gray-600">Contract Price</h4>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(results.contractPrice)}</p>
-              </div>
-              <div className="text-center">
-                <h4 className="font-semibold text-gray-600">Assignment Fee</h4>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(results.assignmentFee)}</p>
-              </div>
-              <div className="text-center">
-                <h4 className="font-semibold text-gray-600">ROI</h4>
-                <p className="text-2xl font-bold text-purple-600">{formatPercent(results.roi)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
+    return <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+      <p className="text-gray-600">Results will appear here after calculation.</p>
+    </div>;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center">
             <FaCalculator className="mr-4 text-blue-600" />
             Real Estate Deal Analyzer
           </h1>
-          <p className="text-xl text-gray-600">Comprehensive analysis for residential and commercial investments</p>
+          <p className="text-xl text-gray-600">Comprehensive analysis with creative financing options</p>
         </div>
 
-        {/* Property Type Tabs */}
         <div className="flex justify-center mb-8">
           <div className="bg-white rounded-lg shadow-lg p-1">
             <button
@@ -1137,7 +608,6 @@ function RealEstateCalculator() {
           </div>
         </div>
 
-        {/* Deal Type Selection */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Deal Type</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -1158,11 +628,9 @@ function RealEstateCalculator() {
           </div>
         </div>
 
-        {/* Purchase Method Selection */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Purchase Method</h2>
           
-          {/* Traditional vs Creative Toggle */}
           <div className="flex justify-center mb-6">
             <div className="bg-gray-100 rounded-lg p-1">
               <button
@@ -1188,7 +656,6 @@ function RealEstateCalculator() {
             </div>
           </div>
 
-          {/* Purchase Method Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(showCreativeFinancing ? purchaseMethods.creative : purchaseMethods.traditional).map(method => (
               <button
@@ -1215,41 +682,18 @@ function RealEstateCalculator() {
               </button>
             ))}
           </div>
-
-          {/* Selected Method Info */}
-          {selectedPurchaseMethod && (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              showCreativeFinancing 
-                ? 'bg-purple-50 border-purple-200' 
-                : 'bg-blue-50 border-blue-200'
-            }`}>
-              <h4 className={`font-semibold mb-2 ${
-                showCreativeFinancing ? 'text-purple-800' : 'text-blue-800'
-              }`}>
-                Selected: {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
-                  .find(m => m.id === selectedPurchaseMethod)?.label}
-              </h4>
-              <p className={`text-sm ${
-                showCreativeFinancing ? 'text-purple-700' : 'text-blue-700'
-              }`}>
-                {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
-                  .find(m => m.id === selectedPurchaseMethod)?.description}
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Input Form */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Property Details</h2>
           
-          {/* Basic Inputs */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Basic Information</h3>
             {renderBasicInputs()}
           </div>
 
-          {/* Deal-specific inputs */}
+          {renderCreativeFinancingInputs()}
+
           {(selectedDealType === 'rental' || selectedDealType === 'brrrr' || selectedDealType === 'livein') && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Rental Details</h3>
@@ -1257,28 +701,6 @@ function RealEstateCalculator() {
             </div>
           )}
 
-          {selectedDealType === 'flip' && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4">Fix & Flip Details</h3>
-              {renderFlipInputs()}
-            </div>
-          )}
-
-          {selectedDealType === 'wholesale' && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4">Wholesale Details</h3>
-              {renderWholesaleInputs()}
-            </div>
-          )}
-
-          {activeTab === 'commercial' && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4">Commercial Details</h3>
-              {renderCommercialInputs()}
-            </div>
-          )}
-
-          {/* Calculate Button */}
           <div className="text-center">
             <button
               onClick={calculateMetrics}
@@ -1290,7 +712,6 @@ function RealEstateCalculator() {
           </div>
         </div>
 
-        {/* Results */}
         {renderResults()}
       </div>
     </div>
