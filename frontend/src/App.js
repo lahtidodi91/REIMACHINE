@@ -57,12 +57,28 @@ const initialFormData = {
   interestRate: '',
   loanTerm: '',
   
+  // Purchase Method
+  purchaseMethod: 'conventional',
+  
   // Balloon Payment Options
   hasBaloonPayment: false,
   balloonAmount: '',
   balloonTerm: '',
   paymentType: 'principal_interest', // 'principal_interest', 'interest_only', 'partial_amortization'
   amortizationPeriod: '',
+  
+  // Creative Financing Specific
+  existingMortgageBalance: '', // For Subject-To, Wraparound
+  existingMortgagePayment: '',
+  existingMortgageRate: '',
+  sellerFinanceTerms: '',
+  leaseAmount: '', // For Lease Options
+  optionFee: '',
+  optionPeriod: '',
+  rentCredit: '',
+  performanceMetrics: '', // For Performance Mortgage
+  equityShare: '', // For Equity Sharing
+  trustStructure: '', // For Trust Acquisition
   
   // Income (for rentals)
   monthlyRent: '',
