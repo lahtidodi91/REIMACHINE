@@ -269,14 +269,18 @@ function RealEstateCalculator() {
       
     } else if (selectedDealType === 'flip') {
       const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
-      const netProfit = data.arv - totalInvestment - data.sellingCosts;
+      const totalCommission = data.arv * (data.totalCommissionPercent / 100);
+      const totalSellingCosts = data.sellingCosts + totalCommission;
+      const netProfit = data.arv - totalInvestment - totalSellingCosts;
       const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
       
       calculations.totalInvestment = totalInvestment;
       calculations.netProfit = netProfit;
       calculations.roi = roi;
       calculations.arv = data.arv;
-      calculations.totalCosts = totalInvestment + data.sellingCosts;
+      calculations.totalCosts = totalInvestment + totalSellingCosts;
+      calculations.totalCommission = totalCommission;
+      calculations.totalSellingCosts = totalSellingCosts;
       calculations.purchaseMethod = selectedPurchaseMethod;
       
     } else if (selectedDealType === 'wholesale') {
