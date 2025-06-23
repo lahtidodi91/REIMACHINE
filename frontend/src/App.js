@@ -599,7 +599,78 @@ function RealEstateCalculator() {
     }
 
     return <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-      <p className="text-gray-600">Results will appear here after calculation.</p>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+        <FaChartLine className="mr-3 text-blue-600" />
+        Investment Analysis Results
+      </h3>
+      
+      {selectedDealType === 'flip' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h4 className="text-lg font-semibold mb-4 text-gray-800">Fix & Flip Analysis</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                <span className="font-medium">Total Investment:</span>
+                <span className="font-bold text-blue-600">{formatCurrency(results.totalInvestment)}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                <span className="font-medium">After Repair Value:</span>
+                <span className="font-bold text-green-600">{formatCurrency(results.arv)}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
+                <span className="font-medium">Agent Commissions:</span>
+                <span className="font-bold text-orange-600">{formatCurrency(results.totalCommission)}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
+                <span className="font-medium">Net Profit:</span>
+                <span className={`font-bold ${results.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(results.netProfit)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                <span className="font-medium">ROI:</span>
+                <span className="font-bold text-purple-600">{formatPercent(results.roi)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h4 className="text-lg font-semibold mb-4 text-gray-800">Profit Breakdown</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span>Purchase Price:</span><span>{formatCurrency(formData.purchasePrice)}</span></div>
+              <div className="flex justify-between"><span>Rehab Cost:</span><span>{formatCurrency(formData.rehabCost)}</span></div>
+              <div className="flex justify-between"><span>Holding Costs:</span><span>{formatCurrency(formData.holdingCosts)}</span></div>
+              <div className="flex justify-between"><span>Selling Costs:</span><span>{formatCurrency(formData.sellingCosts)}</span></div>
+              <div className="flex justify-between"><span>Agent Commission:</span><span>{formatCurrency(results.totalCommission)}</span></div>
+              <hr className="my-2"/>
+              <div className="flex justify-between font-bold"><span>Total Costs:</span><span>{formatCurrency(results.totalCosts)}</span></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {selectedDealType === 'wholesale' && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold mb-4 text-gray-800">Wholesale Analysis</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <h5 className="font-semibold text-gray-600">Contract Price</h5>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(results.contractPrice)}</p>
+            </div>
+            <div className="text-center">
+              <h5 className="font-semibold text-gray-600">Assignment Fee</h5>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(results.assignmentFee)}</p>
+            </div>
+            <div className="text-center">
+              <h5 className="font-semibold text-gray-600">ROI</h5>
+              <p className="text-2xl font-bold text-purple-600">{formatPercent(results.roi)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {!results && (
+        <p className="text-gray-600">Results will appear here after calculation.</p>
+      )}
     </div>;
   };
 
