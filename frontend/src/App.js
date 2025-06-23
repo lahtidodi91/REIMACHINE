@@ -779,6 +779,87 @@ function RealEstateCalculator() {
           </div>
         </div>
 
+        {/* Purchase Method Selection */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Purchase Method</h2>
+          
+          {/* Traditional vs Creative Toggle */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setShowCreativeFinancing(false)}
+                className={`px-6 py-2 rounded-md transition-all ${
+                  !showCreativeFinancing
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Traditional Financing
+              </button>
+              <button
+                onClick={() => setShowCreativeFinancing(true)}
+                className={`px-6 py-2 rounded-md transition-all ${
+                  showCreativeFinancing
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Creative Financing
+              </button>
+            </div>
+          </div>
+
+          {/* Purchase Method Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(showCreativeFinancing ? purchaseMethods.creative : purchaseMethods.traditional).map(method => (
+              <button
+                key={method.id}
+                onClick={() => {
+                  setSelectedPurchaseMethod(method.id);
+                  setFormData(prev => ({ ...prev, purchaseMethod: method.id }));
+                }}
+                className={`p-4 rounded-lg border-2 transition-all hover:shadow-md text-left ${
+                  selectedPurchaseMethod === method.id
+                    ? showCreativeFinancing 
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <span className="text-2xl">{method.icon}</span>
+                  <div>
+                    <div className="font-semibold text-sm mb-1">{method.label}</div>
+                    <div className="text-xs text-gray-500">{method.description}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Selected Method Info */}
+          {selectedPurchaseMethod && (
+            <div className={`mt-4 p-4 rounded-lg border ${
+              showCreativeFinancing 
+                ? 'bg-purple-50 border-purple-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <h4 className={`font-semibold mb-2 ${
+                showCreativeFinancing ? 'text-purple-800' : 'text-blue-800'
+              }`}>
+                Selected: {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
+                  .find(m => m.id === selectedPurchaseMethod)?.label}
+              </h4>
+              <p className={`text-sm ${
+                showCreativeFinancing ? 'text-purple-700' : 'text-blue-700'
+              }`}>
+                {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
+                  .find(m => m.id === selectedPurchaseMethod)?.description}
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Input Form */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Property Details</h2>
