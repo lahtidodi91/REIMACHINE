@@ -734,6 +734,20 @@ function RealEstateCalculator() {
             </div>
           )}
 
+          {selectedDealType === 'flip' && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Fix & Flip Details</h3>
+              {renderFlipInputs()}
+            </div>
+          )}
+
+          {selectedDealType === 'wholesale' && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Wholesale Details</h3>
+              {renderWholesaleInputs()}
+            </div>
+          )}
+
           <div className="text-center">
             <button
               onClick={calculateMetrics}
