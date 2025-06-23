@@ -31,6 +31,13 @@ const initialFormData = {
   interestRate: '',
   loanTerm: '',
   
+  // Balloon Payment Options
+  hasBaloonPayment: false,
+  balloonAmount: '',
+  balloonTerm: '',
+  paymentType: 'principal_interest', // 'principal_interest', 'interest_only', 'partial_amortization'
+  amortizationPeriod: '',
+  
   // Income (for rentals)
   monthlyRent: '',
   otherIncome: '',
