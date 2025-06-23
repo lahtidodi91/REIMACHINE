@@ -101,14 +101,60 @@ function RealEstateCalculator() {
                              data.maintenance + data.capex + data.management + 
                              data.utilities + data.hoa;
       
-      const monthlyPI = data.loanAmount > 0 ? 
-        (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
-        (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
+      // Calculate monthly payment based on loan type
+      let monthlyPI = 0;
+      if (data.loanAmount > 0 && data.interestRate > 0) {
+        const monthlyRate = data.interestRate / 100 / 12;
+        
+        if (data.hasBaloonPayment) {
+          if (data.paymentType === 'interest_only') {
+            // Interest-only payments
+            monthlyPI = data.loanAmount * monthlyRate;
+          } else if (data.paymentType === 'partial_amortization') {
+            // Partial amortization over longer period
+            const amortMonths = (data.amortizationPeriod || 30) * 12;
+            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                       (Math.pow(1 + monthlyRate, amortMonths) - 1);
+          } else {
+            // Regular amortization over balloon term
+            const balloonMonths = data.balloonTerm * 12;
+            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
+                       (Math.pow(1 + monthlyRate, balloonMonths) - 1);
+          }
+        } else {
+          // Standard amortizing loan
+          const loanMonths = data.loanTerm * 12;
+          monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                     (Math.pow(1 + monthlyRate, loanMonths) - 1);
+        }
+      }
       
       const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
       const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
       const annualCashFlow = monthlyCashFlow * 12;
       const totalCashInvested = data.downPayment + (data.rehabCost || 0);
+      
+      // Calculate balloon payment amount if applicable
+      let balloonPaymentAmount = 0;
+      if (data.hasBaloonPayment && data.loanAmount > 0) {
+        if (data.paymentType === 'interest_only') {
+          balloonPaymentAmount = data.loanAmount; // Full principal balance
+        } else if (data.paymentType === 'partial_amortization') {
+          // Calculate remaining balance after partial amortization
+          const monthlyRate = data.interestRate / 100 / 12;
+          const amortMonths = (data.amortizationPeriod || 30) * 12;
+          const balloonMonths = data.balloonTerm * 12;
+          const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                                (Math.pow(1 + monthlyRate, amortMonths) - 1);
+          
+          // Remaining balance calculation
+          const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
+                                  monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
+          balloonPaymentAmount = Math.max(0, remainingBalance);
+        } else {
+          balloonPaymentAmount = data.balloonAmount || data.loanAmount;
+        }
+      }
       
       // Key Metrics
       calculations.monthlyCashFlow = monthlyCashFlow;
@@ -120,11 +166,25 @@ function RealEstateCalculator() {
       calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
       calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
       
+      // Balloon payment specific metrics
+      calculations.hasBaloonPayment = data.hasBaloonPayment;
+      calculations.balloonPaymentAmount = balloonPaymentAmount;
+      calculations.balloonTerm = data.balloonTerm;
+      calculations.paymentType = data.paymentType;
+      calculations.monthlyPI = monthlyPI;
+      
       // Break-even analysis
       calculations.breakEvenRent = totalMonthlyExpenses;
       calculations.monthlyIncome = monthlyIncome;
       calculations.totalMonthlyExpenses = totalMonthlyExpenses;
       calculations.totalCashInvested = totalCashInvested;
+      
+      // Balloon payment planning
+      if (data.hasBaloonPayment) {
+        calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
+        calculations.totalCashNeededAtBalloon = balloonPaymentAmount;
+        calculations.balloonPaymentRatio = data.purchasePrice > 0 ? (balloonPaymentAmount / data.purchasePrice) * 100 : 0;
+      }
       
     } else if (selectedDealType === 'flip') {
       // Fix & Flip Calculations
