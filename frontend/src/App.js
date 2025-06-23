@@ -244,6 +244,54 @@ function RealEstateCalculator() {
       {renderInputField('Loan Amount', 'loanAmount')}
       {renderInputField('Interest Rate', 'interestRate', 'number', '%')}
       {renderInputField('Loan Term (Years)', 'loanTerm', 'number', '')}
+      
+      {/* Balloon Payment Section */}
+      <div className="md:col-span-2 lg:col-span-3 bg-orange-50 p-4 rounded-lg border border-orange-200">
+        <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
+          🎈 Balloon Payment Options
+        </h4>
+        
+        <div className="mb-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={formData.hasBaloonPayment}
+              onChange={(e) => handleInputChange('hasBaloonPayment', e.target.checked)}
+              className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+            />
+            <span className="text-sm font-medium text-gray-700">This loan has a balloon payment</span>
+          </label>
+        </div>
+        
+        {formData.hasBaloonPayment && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Payment Type
+              </label>
+              <select
+                value={formData.paymentType}
+                onChange={(e) => handleInputChange('paymentType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value="principal_interest">Principal & Interest</option>
+                <option value="interest_only">Interest Only</option>
+                <option value="partial_amortization">Partial Amortization</option>
+              </select>
+            </div>
+            
+            {renderInputField('Balloon Due (Years)', 'balloonTerm', 'number', '')}
+            
+            {formData.paymentType === 'partial_amortization' && 
+              renderInputField('Amortization Period (Years)', 'amortizationPeriod', 'number', '')
+            }
+            
+            {formData.paymentType === 'principal_interest' && 
+              renderInputField('Balloon Amount', 'balloonAmount')
+            }
+          </div>
+        )}
+      </div>
     </div>
   );
 
