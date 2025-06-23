@@ -474,6 +474,29 @@ function RealEstateCalculator() {
     </div>
   );
 
+  const renderFlipInputs = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-yellow-50 p-4 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-3">Rehab & Costs</h4>
+        {renderInputField('Rehab Cost', 'rehabCost')}
+        {renderInputField('Holding Costs', 'holdingCosts')}
+        {renderInputField('Other Selling Costs', 'sellingCosts')}
+      </div>
+      <div className="bg-green-50 p-4 rounded-lg">
+        <h4 className="font-semibold text-green-800 mb-3">Sale & Commissions</h4>
+        {renderInputField('After Repair Value (ARV)', 'arv')}
+        {renderInputField('Total Commission %', 'totalCommissionPercent', 'number', '%')}
+      </div>
+    </div>
+  );
+
+  const renderWholesaleInputs = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {renderInputField('Contract Price', 'contractPrice')}
+      {renderInputField('Assignment Fee', 'assignmentFee')}
+    </div>
+  );
+
   const formatCurrency = (value) => 
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
   
