@@ -96,6 +96,12 @@ const initialFormData = {
   sellingCosts: '',
   arv: '',
   
+  // Agent Commissions
+  buyerAgentCommission: '',
+  listingAgentCommission: '3',
+  buyerAgentCommissionPercent: '3',
+  totalCommissionPercent: '6',
+  
   // For Wholesale
   contractPrice: '',
   assignmentFee: '',
