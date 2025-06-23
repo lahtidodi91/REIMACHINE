@@ -22,6 +22,32 @@ const dealTypes = {
   ]
 };
 
+const purchaseMethods = {
+  traditional: [
+    { id: 'conventional', label: 'Conventional Loan', icon: '🏦', description: 'Traditional bank financing' },
+    { id: 'fha', label: 'FHA Loan', icon: '🏛️', description: 'Government-backed loan' },
+    { id: 'va', label: 'VA Loan', icon: '🎖️', description: 'Veterans Affairs loan' },
+    { id: 'hard_money', label: 'Hard Money', icon: '💰', description: 'Private short-term lending' },
+    { id: 'cash', label: 'Cash Purchase', icon: '💵', description: 'All cash acquisition' }
+  ],
+  creative: [
+    { id: 'subject_to', label: 'Subject-To (SubTo)', icon: '🔄', description: 'Take over existing mortgage payments' },
+    { id: 'seller_finance', label: 'Seller Financing', icon: '🤝', description: 'Owner acts as the bank' },
+    { id: 'wraparound', label: 'Wraparound Mortgage', icon: '🌯', description: 'New loan wraps existing mortgage' },
+    { id: 'lease_option', label: 'Lease Option', icon: '📋', description: 'Lease with option to purchase' },
+    { id: 'lease_purchase', label: 'Lease Purchase', icon: '📄', description: 'Lease with obligation to buy' },
+    { id: 'contract_deed', label: 'Agreement for Deed', icon: '📜', description: 'Contract for deed arrangement' },
+    { id: 'land_contract', label: 'Installment Land Contract', icon: '🏞️', description: 'Installment purchase agreement' },
+    { id: 'master_lease', label: 'Master Lease Option (MLO)', icon: '🏢', description: 'Control multiple properties' },
+    { id: 'novation', label: 'Novation Agreement', icon: '🔄', description: 'Contract replacement strategy' },
+    { id: 'hybrid', label: 'Hybrid Deal', icon: '🔀', description: 'Combined strategies (SubTo + Seller Finance)' },
+    { id: 'option_purchase', label: 'Option to Purchase', icon: '🎯', description: 'Standalone purchase option' },
+    { id: 'trust_acquisition', label: 'Trust Acquisition', icon: '🏛️', description: 'Using trusts for acquisition' },
+    { id: 'equity_sharing', label: 'Equity Sharing', icon: '🤝', description: 'Shared ownership agreement' },
+    { id: 'performance_mortgage', label: 'Performance Mortgage', icon: '📈', description: 'Performance-based payments' }
+  ]
+};
+
 const initialFormData = {
   // Property Details
   address: '',
