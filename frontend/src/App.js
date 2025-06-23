@@ -419,6 +419,21 @@ function RealEstateCalculator() {
                   </span>
                 </div>
               </div>
+              
+              {/* Balloon Payment Warning */}
+              {results.hasBaloonPayment && (
+                <div className="mt-4 p-4 bg-orange-100 border border-orange-300 rounded-lg">
+                  <h5 className="font-semibold text-orange-800 mb-2 flex items-center">
+                    ⚠️ Balloon Payment Alert
+                  </h5>
+                  <div className="text-sm text-orange-700 space-y-1">
+                    <p><strong>Payment Type:</strong> {results.paymentType.replace('_', ' ').toUpperCase()}</p>
+                    <p><strong>Balloon Due:</strong> {results.balloonTerm} years</p>
+                    <p><strong>Balloon Amount:</strong> {formatCurrency(results.balloonPaymentAmount)}</p>
+                    <p><strong>Monthly Savings Needed:</strong> {formatCurrency(results.balloonPaymentPerMonth)}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Cash Flow Chart */}
@@ -433,6 +448,22 @@ function RealEstateCalculator() {
                   <Bar dataKey="value" fill="#3B82F6" />
                 </BarChart>
               </ResponsiveContainer>
+              
+              {/* Payment Details */}
+              {results.hasBaloonPayment && (
+                <div className="mt-4 p-3 bg-gray-50 rounded">
+                  <h6 className="font-semibold text-gray-700 mb-2">Payment Structure</h6>
+                  <div className="text-sm text-gray-600">
+                    <p>Monthly P&I: {formatCurrency(results.monthlyPI)}</p>
+                    <p>Payment Type: {results.paymentType.replace('_', ' ')}</p>
+                    {results.paymentType === 'interest_only' && (
+                      <p className="text-orange-600 font-medium">
+                        ⚠️ Interest-only payments - Principal balance remains {formatCurrency(results.balloonPaymentAmount)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -451,6 +482,40 @@ function RealEstateCalculator() {
               <p className="text-2xl font-bold text-purple-600">{formatCurrency(results.totalCashInvested)}</p>
             </div>
           </div>
+          
+          {/* Balloon Payment Planning Section */}
+          {results.hasBaloonPayment && (
+            <div className="mt-6 bg-white p-6 rounded-lg shadow">
+              <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                🎈 Balloon Payment Planning
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
+                    <span className="font-medium">Balloon Amount:</span>
+                    <span className="font-bold text-orange-600">{formatCurrency(results.balloonPaymentAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-red-50 rounded">
+                    <span className="font-medium">Due in:</span>
+                    <span className="font-bold text-red-600">{results.balloonTerm} years</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                    <span className="font-medium">Monthly Savings Goal:</span>
+                    <span className="font-bold text-blue-600">{formatCurrency(results.balloonPaymentPerMonth)}</span>
+                  </div>
+                </div>
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h6 className="font-semibold text-yellow-800 mb-2">Exit Strategy Options:</h6>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    <li>• Refinance before balloon due date</li>
+                    <li>• Sell property to pay balloon</li>
+                    <li>• Save monthly to pay balloon in cash</li>
+                    <li>• Negotiate loan extension with lender</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
