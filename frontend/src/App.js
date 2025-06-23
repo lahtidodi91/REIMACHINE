@@ -145,53 +145,117 @@ function RealEstateCalculator() {
                              data.maintenance + data.capex + data.management + 
                              data.utilities + data.hoa;
       
-      // Calculate monthly payment based on loan type
+      // Calculate monthly payment based on purchase method
       let monthlyPI = 0;
-      if (data.loanAmount > 0 && data.interestRate > 0) {
-        const monthlyRate = data.interestRate / 100 / 12;
-        
-        if (data.hasBaloonPayment) {
-          if (data.paymentType === 'interest_only') {
-            // Interest-only payments
-            monthlyPI = data.loanAmount * monthlyRate;
-          } else if (data.paymentType === 'partial_amortization') {
-            // Partial amortization over longer period
-            const amortMonths = (data.amortizationPeriod || 30) * 12;
-            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-                       (Math.pow(1 + monthlyRate, amortMonths) - 1);
-          } else {
-            // Regular amortization over balloon term
-            const balloonMonths = data.balloonTerm * 12;
-            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
-                       (Math.pow(1 + monthlyRate, balloonMonths) - 1);
+      let actualCashInvested = data.downPayment + (data.rehabCost || 0);
+      
+      // Purchase method specific calculations
+      switch (selectedPurchaseMethod) {
+        case 'subject_to':
+          monthlyPI = data.existingMortgagePayment || 0;
+          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0); // Minimal cash
+          break;
+          
+        case 'seller_finance':
+          if (data.loanAmount > 0 && data.interestRate > 0) {
+            const monthlyRate = data.interestRate / 100 / 12;
+            const loanMonths = data.loanTerm * 12;
+            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
           }
-        } else {
-          // Standard amortizing loan
-          const loanMonths = data.loanTerm * 12;
-          monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
-                     (Math.pow(1 + monthlyRate, loanMonths) - 1);
-        }
+          break;
+          
+        case 'wraparound':
+          const existingPayment = data.existingMortgagePayment || 0;
+          const wrapPayment = data.loanAmount > 0 ? 
+            (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
+            (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
+          monthlyPI = wrapPayment;
+          calculations.existingMortgagePayment = existingPayment;
+          calculations.wrapAroundSpread = wrapPayment - existingPayment;
+          break;
+          
+        case 'lease_option':
+        case 'lease_purchase':
+          monthlyPI = data.leaseAmount || 0;
+          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
+          calculations.rentCredit = data.rentCredit || 0;
+          calculations.optionPeriod = data.optionPeriod || 0;
+          break;
+          
+        case 'contract_deed':
+        case 'land_contract':
+          if (data.loanAmount > 0 && data.interestRate > 0) {
+            const monthlyRate = data.interestRate / 100 / 12;
+            const loanMonths = data.loanTerm * 12;
+            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
+          }
+          actualCashInvested = data.downPayment; // Usually lower down payment
+          break;
+          
+        case 'equity_sharing':
+          if (data.loanAmount > 0 && data.interestRate > 0) {
+            const monthlyRate = data.interestRate / 100 / 12;
+            const loanMonths = data.loanTerm * 12;
+            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
+          }
+          calculations.equitySharePercentage = data.equityShare || 0;
+          break;
+          
+        case 'performance_mortgage':
+          // Performance-based payment calculation
+          monthlyPI = data.monthlyRent > 0 ? (data.monthlyRent * (data.performanceMetrics / 100)) : 0;
+          break;
+          
+        case 'cash':
+          monthlyPI = 0;
+          actualCashInvested = data.purchasePrice + (data.rehabCost || 0);
+          break;
+          
+        default:
+          // Traditional financing
+          if (data.loanAmount > 0 && data.interestRate > 0) {
+            const monthlyRate = data.interestRate / 100 / 12;
+            
+            if (data.hasBaloonPayment) {
+              if (data.paymentType === 'interest_only') {
+                monthlyPI = data.loanAmount * monthlyRate;
+              } else if (data.paymentType === 'partial_amortization') {
+                const amortMonths = (data.amortizationPeriod || 30) * 12;
+                monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                           (Math.pow(1 + monthlyRate, amortMonths) - 1);
+              } else {
+                const balloonMonths = data.balloonTerm * 12;
+                monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
+                           (Math.pow(1 + monthlyRate, balloonMonths) - 1);
+              }
+            } else {
+              const loanMonths = data.loanTerm * 12;
+              monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                         (Math.pow(1 + monthlyRate, loanMonths) - 1);
+            }
+          }
       }
       
       const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
       const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
       const annualCashFlow = monthlyCashFlow * 12;
-      const totalCashInvested = data.downPayment + (data.rehabCost || 0);
+      const totalCashInvested = actualCashInvested;
       
       // Calculate balloon payment amount if applicable
       let balloonPaymentAmount = 0;
-      if (data.hasBaloonPayment && data.loanAmount > 0) {
+      if (data.hasBaloonPayment && data.loanAmount > 0 && selectedPurchaseMethod !== 'subject_to') {
         if (data.paymentType === 'interest_only') {
-          balloonPaymentAmount = data.loanAmount; // Full principal balance
+          balloonPaymentAmount = data.loanAmount;
         } else if (data.paymentType === 'partial_amortization') {
-          // Calculate remaining balance after partial amortization
           const monthlyRate = data.interestRate / 100 / 12;
           const amortMonths = (data.amortizationPeriod || 30) * 12;
           const balloonMonths = data.balloonTerm * 12;
           const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
                                 (Math.pow(1 + monthlyRate, amortMonths) - 1);
           
-          // Remaining balance calculation
           const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
                                   monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
           balloonPaymentAmount = Math.max(0, remainingBalance);
@@ -209,6 +273,10 @@ function RealEstateCalculator() {
       calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
       calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
       calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
+      
+      // Purchase method specific data
+      calculations.purchaseMethod = selectedPurchaseMethod;
+      calculations.actualCashInvested = actualCashInvested;
       
       // Balloon payment specific metrics
       calculations.hasBaloonPayment = data.hasBaloonPayment;
@@ -241,6 +309,7 @@ function RealEstateCalculator() {
       calculations.roi = roi;
       calculations.arv = data.arv;
       calculations.totalCosts = totalInvestment + data.sellingCosts;
+      calculations.purchaseMethod = selectedPurchaseMethod;
       
     } else if (selectedDealType === 'wholesale') {
       // Wholesale Calculations
@@ -251,10 +320,11 @@ function RealEstateCalculator() {
       calculations.roi = roi;
       calculations.contractPrice = data.contractPrice;
       calculations.assignmentFee = data.assignmentFee;
+      calculations.purchaseMethod = selectedPurchaseMethod;
     }
 
     setResults(calculations);
-  }, [formData, selectedDealType]);
+  }, [formData, selectedDealType, selectedPurchaseMethod]);
 
   const renderInputField = (label, field, type = 'number', prefix = '$') => (
     <div className="mb-4">
