@@ -295,7 +295,7 @@ function RealEstateCalculator() {
     }
 
     setResults(calculations);
-  }, [formData, selectedDealType, selectedPurchaseMethod]);
+  }, [formData, selectedDealTypes, selectedPurchaseMethod]);
 
   const renderInputField = (label, field, type = 'number', prefix = '$') => (
     <div className="mb-4">
