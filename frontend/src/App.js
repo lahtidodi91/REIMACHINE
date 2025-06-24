@@ -115,7 +115,7 @@ const initialFormData = {
 
 function RealEstateCalculator() {
   const [activeTab, setActiveTab] = useState('residential');
-  const [selectedDealTypes, setSelectedDealTypes] = useState(['rental']); // Changed to array
+  const [selectedDealTypes, setSelectedDealTypes] = useState(['rental']);
   const [selectedPurchaseMethods, setSelectedPurchaseMethods] = useState(['conventional']);
   const [showCreativeFinancing, setShowCreativeFinancing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
@@ -147,163 +147,160 @@ function RealEstateCalculator() {
         const resultKey = `${dealType}_${purchaseMethod}`;
 
         if (dealType === 'rental' || dealType === 'brrrr' || dealType === 'livein') {
-        // Rental Property Calculations
-        const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
-        const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
-                               data.maintenance + data.capex + data.management + 
-                               data.utilities + data.hoa;
-        
-        // Calculate monthly payment based on purchase method
-        let monthlyPI = 0;
-        let actualCashInvested = data.downPayment + (data.rehabCost || 0);
-        
-        // Purchase method specific calculations
-        switch (purchaseMethod) {
-          case 'subject_to':
-            monthlyPI = data.existingMortgagePayment || 0;
-            actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
-            break;
-            
-          case 'seller_finance':
-            if (data.loanAmount > 0 && data.interestRate > 0) {
-              const monthlyRate = data.interestRate / 100 / 12;
-              const loanMonths = data.loanTerm * 12;
-              monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
-                         (Math.pow(1 + monthlyRate, loanMonths) - 1);
-            }
-            break;
-            
-          case 'wraparound':
-            const existingPayment = data.existingMortgagePayment || 0;
-            const wrapPayment = data.loanAmount > 0 ? 
-              (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
-              (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
-            monthlyPI = wrapPayment;
-            calculations.existingMortgagePayment = existingPayment;
-            calculations.wrapAroundSpread = wrapPayment - existingPayment;
-            break;
-            
-          case 'lease_option':
-          case 'lease_purchase':
-            monthlyPI = data.leaseAmount || 0;
-            actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
-            calculations.rentCredit = data.rentCredit || 0;
-            calculations.optionPeriod = data.optionPeriod || 0;
-            break;
-            
-          case 'cash':
-            monthlyPI = 0;
-            actualCashInvested = data.purchasePrice + (data.rehabCost || 0);
-            break;
-            
-          default:
-            // Traditional financing
-            if (data.loanAmount > 0 && data.interestRate > 0) {
-              const monthlyRate = data.interestRate / 100 / 12;
+          // Rental Property Calculations
+          const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
+          const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
+                                 data.maintenance + data.capex + data.management + 
+                                 data.utilities + data.hoa;
+          
+          // Calculate monthly payment based on purchase method
+          let monthlyPI = 0;
+          let actualCashInvested = data.downPayment + (data.rehabCost || 0);
+          
+          // Purchase method specific calculations
+          switch (purchaseMethod) {
+            case 'subject_to':
+              monthlyPI = data.existingMortgagePayment || 0;
+              actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
+              break;
               
-              if (data.hasBaloonPayment) {
-                if (data.paymentType === 'interest_only') {
-                  monthlyPI = data.loanAmount * monthlyRate;
-                } else if (data.paymentType === 'partial_amortization') {
-                  const amortMonths = (data.amortizationPeriod || 30) * 12;
-                  monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-                             (Math.pow(1 + monthlyRate, amortMonths) - 1);
-                } else {
-                  const balloonMonths = data.balloonTerm * 12;
-                  monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
-                             (Math.pow(1 + monthlyRate, balloonMonths) - 1);
-                }
-              } else {
+            case 'seller_finance':
+              if (data.loanAmount > 0 && data.interestRate > 0) {
+                const monthlyRate = data.interestRate / 100 / 12;
                 const loanMonths = data.loanTerm * 12;
                 monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
                            (Math.pow(1 + monthlyRate, loanMonths) - 1);
               }
-            }
-        }
-        
-        const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
-        const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
-        const annualCashFlow = monthlyCashFlow * 12;
-        
-        // Calculate balloon payment if applicable
-        let balloonPaymentAmount = 0;
-        if (data.hasBaloonPayment && data.loanAmount > 0 && purchaseMethod !== 'subject_to') {
-          if (data.paymentType === 'interest_only') {
-            balloonPaymentAmount = data.loanAmount;
-          } else if (data.paymentType === 'partial_amortization') {
-            const monthlyRate = data.interestRate / 100 / 12;
-            const amortMonths = (data.amortizationPeriod || 30) * 12;
-            const balloonMonths = data.balloonTerm * 12;
-            const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-                                  (Math.pow(1 + monthlyRate, amortMonths) - 1);
-            
-            const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
-                                    monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
-            balloonPaymentAmount = Math.max(0, remainingBalance);
-          } else {
-            balloonPaymentAmount = data.balloonAmount || data.loanAmount;
+              break;
+              
+            case 'wraparound':
+              const existingPayment = data.existingMortgagePayment || 0;
+              const wrapPayment = data.loanAmount > 0 ? 
+                (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
+                (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
+              monthlyPI = wrapPayment;
+              calculations.existingMortgagePayment = existingPayment;
+              calculations.wrapAroundSpread = wrapPayment - existingPayment;
+              break;
+              
+            case 'lease_option':
+            case 'lease_purchase':
+              monthlyPI = data.leaseAmount || 0;
+              actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
+              calculations.rentCredit = data.rentCredit || 0;
+              calculations.optionPeriod = data.optionPeriod || 0;
+              break;
+              
+            case 'cash':
+              monthlyPI = 0;
+              actualCashInvested = data.purchasePrice + (data.rehabCost || 0);
+              break;
+              
+            default:
+              // Traditional financing
+              if (data.loanAmount > 0 && data.interestRate > 0) {
+                const monthlyRate = data.interestRate / 100 / 12;
+                
+                if (data.hasBaloonPayment) {
+                  if (data.paymentType === 'interest_only') {
+                    monthlyPI = data.loanAmount * monthlyRate;
+                  } else if (data.paymentType === 'partial_amortization') {
+                    const amortMonths = (data.amortizationPeriod || 30) * 12;
+                    monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                               (Math.pow(1 + monthlyRate, amortMonths) - 1);
+                  } else {
+                    const balloonMonths = data.balloonTerm * 12;
+                    monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
+                               (Math.pow(1 + monthlyRate, balloonMonths) - 1);
+                  }
+                } else {
+                  const loanMonths = data.loanTerm * 12;
+                  monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                             (Math.pow(1 + monthlyRate, loanMonths) - 1);
+                }
+              }
           }
+          
+          const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
+          const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
+          const annualCashFlow = monthlyCashFlow * 12;
+          
+          // Calculate balloon payment if applicable
+          let balloonPaymentAmount = 0;
+          if (data.hasBaloonPayment && data.loanAmount > 0 && purchaseMethod !== 'subject_to') {
+            if (data.paymentType === 'interest_only') {
+              balloonPaymentAmount = data.loanAmount;
+            } else if (data.paymentType === 'partial_amortization') {
+              const monthlyRate = data.interestRate / 100 / 12;
+              const amortMonths = (data.amortizationPeriod || 30) * 12;
+              const balloonMonths = data.balloonTerm * 12;
+              const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                                    (Math.pow(1 + monthlyRate, amortMonths) - 1);
+              
+              const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
+                                      monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
+              balloonPaymentAmount = Math.max(0, remainingBalance);
+            } else {
+              balloonPaymentAmount = data.balloonAmount || data.loanAmount;
+            }
+          }
+          
+          // Key Metrics
+          calculations.dealType = dealType;
+          calculations.purchaseMethod = purchaseMethod;
+          calculations.monthlyCashFlow = monthlyCashFlow;
+          calculations.annualCashFlow = annualCashFlow;
+          calculations.capRate = data.purchasePrice > 0 ? ((monthlyIncome * 12 - monthlyExpenses * 12) / data.purchasePrice) * 100 : 0;
+          calculations.cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
+          calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
+          calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
+          calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
+          calculations.actualCashInvested = actualCashInvested;
+          calculations.hasBaloonPayment = data.hasBaloonPayment;
+          calculations.balloonPaymentAmount = balloonPaymentAmount;
+          calculations.balloonTerm = data.balloonTerm;
+          calculations.paymentType = data.paymentType;
+          calculations.monthlyPI = monthlyPI;
+          calculations.breakEvenRent = totalMonthlyExpenses;
+          calculations.monthlyIncome = monthlyIncome;
+          calculations.totalMonthlyExpenses = totalMonthlyExpenses;
+          calculations.totalCashInvested = actualCashInvested;
+          
+          if (data.hasBaloonPayment) {
+            calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
+          }
+          
+        } else if (dealType === 'flip') {
+          const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
+          const totalCommission = data.arv * (data.totalCommissionPercent / 100);
+          const totalSellingCosts = data.sellingCosts + totalCommission;
+          const netProfit = data.arv - totalInvestment - totalSellingCosts;
+          const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
+          
+          calculations.dealType = dealType;
+          calculations.purchaseMethod = purchaseMethod;
+          calculations.totalInvestment = totalInvestment;
+          calculations.netProfit = netProfit;
+          calculations.roi = roi;
+          calculations.arv = data.arv;
+          calculations.totalCosts = totalInvestment + totalSellingCosts;
+          calculations.totalCommission = totalCommission;
+          calculations.totalSellingCosts = totalSellingCosts;
+          
+        } else if (dealType === 'wholesale') {
+          const profit = data.assignmentFee;
+          const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
+          
+          calculations.dealType = dealType;
+          calculations.purchaseMethod = purchaseMethod;
+          calculations.profit = profit;
+          calculations.roi = roi;
+          calculations.contractPrice = data.contractPrice;
+          calculations.assignmentFee = data.assignmentFee;
         }
-        
-        // Key Metrics
-        calculations.dealType = dealType;
-        calculations.monthlyCashFlow = monthlyCashFlow;
-        calculations.annualCashFlow = annualCashFlow;
-        calculations.capRate = data.purchasePrice > 0 ? ((monthlyIncome * 12 - monthlyExpenses * 12) / data.purchasePrice) * 100 : 0;
-        calculations.cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
-        calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
-        calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
-        calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
-        
-        // Purchase method specific data
-        calculations.purchaseMethod = purchaseMethod;
-        calculations.actualCashInvested = actualCashInvested;
-        calculations.hasBaloonPayment = data.hasBaloonPayment;
-        calculations.balloonPaymentAmount = balloonPaymentAmount;
-        calculations.balloonTerm = data.balloonTerm;
-        calculations.paymentType = data.paymentType;
-        calculations.monthlyPI = monthlyPI;
-        
-        // Break-even analysis
-        calculations.breakEvenRent = totalMonthlyExpenses;
-        calculations.monthlyIncome = monthlyIncome;
-        calculations.totalMonthlyExpenses = totalMonthlyExpenses;
-        calculations.totalCashInvested = actualCashInvested;
-        
-        if (data.hasBaloonPayment) {
-          calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
-        }
-        
-      } else if (dealType === 'flip') {
-        const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
-        const totalCommission = data.arv * (data.totalCommissionPercent / 100);
-        const totalSellingCosts = data.sellingCosts + totalCommission;
-        const netProfit = data.arv - totalInvestment - totalSellingCosts;
-        const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
-        
-        calculations.dealType = dealType;
-        calculations.totalInvestment = totalInvestment;
-        calculations.netProfit = netProfit;
-        calculations.roi = roi;
-        calculations.arv = data.arv;
-        calculations.totalCosts = totalInvestment + totalSellingCosts;
-        calculations.totalCommission = totalCommission;
-        calculations.totalSellingCosts = totalSellingCosts;
-        calculations.purchaseMethod = selectedPurchaseMethod;
-        
-      } else if (dealType === 'wholesale') {
-        const profit = data.assignmentFee;
-        const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
-        
-        calculations.dealType = dealType;
-        calculations.profit = profit;
-        calculations.roi = roi;
-        calculations.contractPrice = data.contractPrice;
-        calculations.assignmentFee = data.assignmentFee;
-        calculations.purchaseMethod = selectedPurchaseMethod;
-      }
 
-      allResults[resultKey] = calculations;
+        allResults[resultKey] = calculations;
+      });
     });
 
     setResults(allResults);
@@ -396,7 +393,9 @@ function RealEstateCalculator() {
     if (!showCreativeFinancing) return null;
 
     const renderMethodSpecificFields = () => {
-      switch (selectedPurchaseMethod) {
+      const firstSelectedMethod = selectedPurchaseMethods[0];
+      
+      switch (firstSelectedMethod) {
         case 'subject_to':
           return (
             <div className="bg-red-50 p-4 rounded-lg border border-red-200">
@@ -443,7 +442,7 @@ function RealEstateCalculator() {
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <h4 className="font-semibold text-gray-700 mb-3">Creative Financing Selected</h4>
               <p className="text-sm text-gray-600">
-                {purchaseMethods.creative.find(m => m.id === selectedPurchaseMethod)?.description}
+                {purchaseMethods.creative.find(m => m.id === firstSelectedMethod)?.description}
               </p>
             </div>
           );
@@ -517,173 +516,89 @@ function RealEstateCalculator() {
   const renderResults = () => {
     if (!results) return null;
 
-    if (selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') {
-      const chartData = [
-        { name: 'Monthly Income', value: results.monthlyIncome || 0 },
-        { name: 'Monthly Expenses', value: results.totalMonthlyExpenses || 0 },
-        { name: 'Cash Flow', value: results.monthlyCashFlow || 0 }
-      ];
+    const resultKeys = Object.keys(results);
+    if (resultKeys.length === 0) return null;
 
-      return (
-        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <FaChartLine className="mr-3 text-blue-600" />
-            Investment Analysis Results
-          </h3>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800">Key Metrics</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-                  <span className="font-medium">Monthly Cash Flow:</span>
-                  <span className={`font-bold ${results.monthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(results.monthlyCashFlow)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-                  <span className="font-medium">Annual Cash Flow:</span>
-                  <span className={`font-bold ${results.annualCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(results.annualCashFlow)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-                  <span className="font-medium">Cap Rate:</span>
-                  <span className="font-bold text-gray-800">{formatPercent(results.capRate)}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-                  <span className="font-medium">Cash-on-Cash Return:</span>
-                  <span className="font-bold text-gray-800">{formatPercent(results.cashOnCashReturn)}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
-                  <span className="font-medium">Purchase Method:</span>
-                  <span className="font-bold text-gray-800">
-                    {purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
-                      .find(m => m.id === results.purchaseMethod)?.label || 'Unknown'}
-                  </span>
-                </div>
-              </div>
-              
-              {results.hasBaloonPayment && (
-                <div className="mt-4 p-4 bg-orange-100 border border-orange-300 rounded-lg">
-                  <h5 className="font-semibold text-orange-800 mb-2">⚠️ Balloon Payment Alert</h5>
-                  <div className="text-sm text-orange-700 space-y-1">
-                    <p><strong>Balloon Due:</strong> {results.balloonTerm} years</p>
-                    <p><strong>Balloon Amount:</strong> {formatCurrency(results.balloonPaymentAmount)}</p>
-                    <p><strong>Monthly Savings Needed:</strong> {formatCurrency(results.balloonPaymentPerMonth)}</p>
+    return (
+      <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+          <FaChartLine className="mr-3 text-blue-600" />
+          Investment Analysis Results
+        </h3>
+        
+        <div className="grid grid-cols-1 gap-8">
+          {resultKeys.map(resultKey => {
+            const result = results[resultKey];
+            const dealTypeLabel = dealTypes[activeTab].find(d => d.id === result.dealType)?.label || result.dealType;
+            const purchaseMethodLabel = [...purchaseMethods.traditional, ...purchaseMethods.creative]
+              .find(m => m.id === result.purchaseMethod)?.label || result.purchaseMethod;
+
+            return (
+              <div key={resultKey} className="bg-white p-6 rounded-lg shadow">
+                <h4 className="text-lg font-semibold mb-4 text-gray-800">
+                  {dealTypeLabel} - {purchaseMethodLabel}
+                </h4>
+                
+                {(result.dealType === 'rental' || result.dealType === 'brrrr' || result.dealType === 'livein') && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Monthly Cash Flow</h5>
+                      <p className={`text-xl font-bold ${result.monthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(result.monthlyCashFlow)}
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Cap Rate</h5>
+                      <p className="text-xl font-bold text-gray-800">{formatPercent(result.capRate)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Cash-on-Cash Return</h5>
+                      <p className="text-xl font-bold text-purple-600">{formatPercent(result.cashOnCashReturn)}</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800">Monthly Cash Flow</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Bar dataKey="value" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+                {result.dealType === 'flip' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Net Profit</h5>
+                      <p className={`text-xl font-bold ${result.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(result.netProfit)}
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded">
+                      <h5 className="font-semibold text-gray-600">ROI</h5>
+                      <p className="text-xl font-bold text-green-600">{formatPercent(result.roi)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Total Commission</h5>
+                      <p className="text-xl font-bold text-orange-600">{formatCurrency(result.totalCommission)}</p>
+                    </div>
+                  </div>
+                )}
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h5 className="font-semibold text-gray-600">Break-Even Rent</h5>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(results.breakEvenRent)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h5 className="font-semibold text-gray-600">Total Cash Invested</h5>
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(results.actualCashInvested)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h5 className="font-semibold text-gray-600">1% Rule</h5>
-              <p className={`text-2xl font-bold ${results.onePercentRule >= 1 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercent(results.onePercentRule)}
-              </p>
-            </div>
-          </div>
+                {result.dealType === 'wholesale' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Assignment Fee</h5>
+                      <p className="text-xl font-bold text-blue-600">{formatCurrency(result.assignmentFee)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded">
+                      <h5 className="font-semibold text-gray-600">ROI</h5>
+                      <p className="text-xl font-bold text-green-600">{formatPercent(result.roi)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded">
+                      <h5 className="font-semibold text-gray-600">Contract Price</h5>
+                      <p className="text-xl font-bold text-purple-600">{formatCurrency(result.contractPrice)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      );
-    }
-
-    return <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-      <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-        <FaChartLine className="mr-3 text-blue-600" />
-        Investment Analysis Results
-      </h3>
-      
-      {selectedDealTypes[0] === 'flip' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h4 className="text-lg font-semibold mb-4 text-gray-800">Fix & Flip Analysis</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-                <span className="font-medium">Total Investment:</span>
-                <span className="font-bold text-blue-600">{formatCurrency(results.totalInvestment)}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-                <span className="font-medium">After Repair Value:</span>
-                <span className="font-bold text-green-600">{formatCurrency(results.arv)}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
-                <span className="font-medium">Agent Commissions:</span>
-                <span className="font-bold text-orange-600">{formatCurrency(results.totalCommission)}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-                <span className="font-medium">Net Profit:</span>
-                <span className={`font-bold ${results.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(results.netProfit)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-                <span className="font-medium">ROI:</span>
-                <span className="font-bold text-purple-600">{formatPercent(results.roi)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h4 className="text-lg font-semibold mb-4 text-gray-800">Profit Breakdown</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Purchase Price:</span><span>{formatCurrency(formData.purchasePrice)}</span></div>
-              <div className="flex justify-between"><span>Rehab Cost:</span><span>{formatCurrency(formData.rehabCost)}</span></div>
-              <div className="flex justify-between"><span>Holding Costs:</span><span>{formatCurrency(formData.holdingCosts)}</span></div>
-              <div className="flex justify-between"><span>Selling Costs:</span><span>{formatCurrency(formData.sellingCosts)}</span></div>
-              <div className="flex justify-between"><span>Agent Commission:</span><span>{formatCurrency(results.totalCommission)}</span></div>
-              <hr className="my-2"/>
-              <div className="flex justify-between font-bold"><span>Total Costs:</span><span>{formatCurrency(results.totalCosts)}</span></div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {selectedDealTypes[0] === 'wholesale' && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h4 className="text-lg font-semibold mb-4 text-gray-800">Wholesale Analysis</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <h5 className="font-semibold text-gray-600">Contract Price</h5>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(results.contractPrice)}</p>
-            </div>
-            <div className="text-center">
-              <h5 className="font-semibold text-gray-600">Assignment Fee</h5>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(results.assignmentFee)}</p>
-            </div>
-            <div className="text-center">
-              <h5 className="font-semibold text-gray-600">ROI</h5>
-              <p className="text-2xl font-bold text-purple-600">{formatPercent(results.roi)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {!results && (
-        <p className="text-gray-600">Results will appear here after calculation.</p>
-      )}
-    </div>;
+      </div>
+    );
   };
 
   return (
@@ -733,12 +648,10 @@ function RealEstateCalculator() {
                 key={deal.id}
                 onClick={() => {
                   if (selectedDealTypes.includes(deal.id)) {
-                    // Remove if already selected (but keep at least one)
                     if (selectedDealTypes.length > 1) {
                       setSelectedDealTypes(prev => prev.filter(id => id !== deal.id));
                     }
                   } else {
-                    // Add to selection
                     setSelectedDealTypes(prev => [...prev, deal.id]);
                   }
                 }}
@@ -803,11 +716,17 @@ function RealEstateCalculator() {
               <button
                 key={method.id}
                 onClick={() => {
-                  setSelectedPurchaseMethod(method.id);
+                  if (selectedPurchaseMethods.includes(method.id)) {
+                    if (selectedPurchaseMethods.length > 1) {
+                      setSelectedPurchaseMethods(prev => prev.filter(id => id !== method.id));
+                    }
+                  } else {
+                    setSelectedPurchaseMethods(prev => [...prev, method.id]);
+                  }
                   setFormData(prev => ({ ...prev, purchaseMethod: method.id }));
                 }}
                 className={`p-4 rounded-lg border-2 transition-all hover:shadow-md text-left ${
-                  selectedPurchaseMethod === method.id
+                  selectedPurchaseMethods.includes(method.id)
                     ? showCreativeFinancing 
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-blue-500 bg-blue-50 text-blue-700'
@@ -816,14 +735,39 @@ function RealEstateCalculator() {
               >
                 <div className="flex items-start space-x-3">
                   <span className="text-2xl">{method.icon}</span>
-                  <div>
+                  <div className="flex-1">
                     <div className="font-semibold text-sm mb-1">{method.label}</div>
                     <div className="text-xs text-gray-500">{method.description}</div>
+                    {selectedPurchaseMethods.includes(method.id) && (
+                      <div className="text-xs text-green-600 mt-1 font-medium">✓ Selected</div>
+                    )}
                   </div>
                 </div>
               </button>
             ))}
           </div>
+
+          {selectedPurchaseMethods.length > 1 && (
+            <div className={`mt-4 p-4 rounded-lg border ${
+              showCreativeFinancing 
+                ? 'bg-purple-50 border-purple-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <h4 className={`font-semibold mb-2 ${
+                showCreativeFinancing ? 'text-purple-800' : 'text-blue-800'
+              }`}>
+                Comparing {selectedPurchaseMethods.length} Purchase Methods:
+              </h4>
+              <p className={`text-sm ${
+                showCreativeFinancing ? 'text-purple-700' : 'text-blue-700'
+              }`}>
+                {selectedPurchaseMethods.map(methodId => 
+                  purchaseMethods[showCreativeFinancing ? 'creative' : 'traditional']
+                    .find(m => m.id === methodId)?.label
+                ).join(', ')}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -836,21 +780,21 @@ function RealEstateCalculator() {
 
           {renderCreativeFinancingInputs()}
 
-          {(selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') && (
+          {(selectedDealTypes.includes('rental') || selectedDealTypes.includes('brrrr') || selectedDealTypes.includes('livein')) && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Rental Details</h3>
               {renderRentalInputs()}
             </div>
           )}
 
-          {selectedDealTypes[0] === 'flip' && (
+          {selectedDealTypes.includes('flip') && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Fix & Flip Details</h3>
               {renderFlipInputs()}
             </div>
           )}
 
-          {selectedDealTypes[0] === 'wholesale' && (
+          {selectedDealTypes.includes('wholesale') && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Wholesale Details</h3>
               {renderWholesaleInputs()}
