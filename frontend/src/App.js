@@ -158,7 +158,7 @@ function RealEstateCalculator() {
         let actualCashInvested = data.downPayment + (data.rehabCost || 0);
         
         // Purchase method specific calculations
-        switch (selectedPurchaseMethod) {
+        switch (purchaseMethod) {
           case 'subject_to':
             monthlyPI = data.existingMortgagePayment || 0;
             actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
