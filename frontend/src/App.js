@@ -228,7 +228,7 @@ function RealEstateCalculator() {
         
         // Calculate balloon payment if applicable
         let balloonPaymentAmount = 0;
-        if (data.hasBaloonPayment && data.loanAmount > 0 && selectedPurchaseMethod !== 'subject_to') {
+        if (data.hasBaloonPayment && data.loanAmount > 0 && purchaseMethod !== 'subject_to') {
           if (data.paymentType === 'interest_only') {
             balloonPaymentAmount = data.loanAmount;
           } else if (data.paymentType === 'partial_amortization') {
