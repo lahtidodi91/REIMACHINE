@@ -140,7 +140,7 @@ function RealEstateCalculator() {
 
     const calculations = {};
 
-    if (selectedDealType === 'rental' || selectedDealType === 'brrrr' || selectedDealType === 'livein') {
+    if (selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') {
       // Rental Property Calculations
       const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
       const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
@@ -267,7 +267,7 @@ function RealEstateCalculator() {
         calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
       }
       
-    } else if (selectedDealType === 'flip') {
+    } else if (selectedDealTypes[0] === 'flip') {
       const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
       const totalCommission = data.arv * (data.totalCommissionPercent / 100);
       const totalSellingCosts = data.sellingCosts + totalCommission;
