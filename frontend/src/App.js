@@ -257,7 +257,7 @@ function RealEstateCalculator() {
         calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
         
         // Purchase method specific data
-        calculations.purchaseMethod = selectedPurchaseMethod;
+        calculations.purchaseMethod = purchaseMethod;
         calculations.actualCashInvested = actualCashInvested;
         calculations.hasBaloonPayment = data.hasBaloonPayment;
         calculations.balloonPaymentAmount = balloonPaymentAmount;
