@@ -805,7 +805,7 @@ function RealEstateCalculator() {
             </div>
           )}
 
-          {selectedDealType === 'flip' && (
+          {selectedDealTypes[0] === 'flip' && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Fix & Flip Details</h3>
               {renderFlipInputs()}
