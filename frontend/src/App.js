@@ -115,7 +115,7 @@ const initialFormData = {
 
 function RealEstateCalculator() {
   const [activeTab, setActiveTab] = useState('residential');
-  const [selectedDealType, setSelectedDealType] = useState('rental');
+  const [selectedDealTypes, setSelectedDealTypes] = useState(['rental']); // Changed to array
   const [selectedPurchaseMethod, setSelectedPurchaseMethod] = useState('conventional');
   const [showCreativeFinancing, setShowCreativeFinancing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
