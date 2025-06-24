@@ -505,7 +505,7 @@ function RealEstateCalculator() {
   const renderResults = () => {
     if (!results) return null;
 
-    if (selectedDealType === 'rental' || selectedDealType === 'brrrr' || selectedDealType === 'livein') {
+    if (selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') {
       const chartData = [
         { name: 'Monthly Income', value: results.monthlyIncome || 0 },
         { name: 'Monthly Expenses', value: results.totalMonthlyExpenses || 0 },
