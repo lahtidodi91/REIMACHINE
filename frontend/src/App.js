@@ -138,163 +138,173 @@ function RealEstateCalculator() {
       }
     });
 
-    const calculations = {};
+    const allResults = {};
 
-    if (selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') {
-      // Rental Property Calculations
-      const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
-      const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
-                             data.maintenance + data.capex + data.management + 
-                             data.utilities + data.hoa;
-      
-      // Calculate monthly payment based on purchase method
-      let monthlyPI = 0;
-      let actualCashInvested = data.downPayment + (data.rehabCost || 0);
-      
-      // Purchase method specific calculations
-      switch (selectedPurchaseMethod) {
-        case 'subject_to':
-          monthlyPI = data.existingMortgagePayment || 0;
-          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
-          break;
-          
-        case 'seller_finance':
-          if (data.loanAmount > 0 && data.interestRate > 0) {
-            const monthlyRate = data.interestRate / 100 / 12;
-            const loanMonths = data.loanTerm * 12;
-            monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
-                       (Math.pow(1 + monthlyRate, loanMonths) - 1);
-          }
-          break;
-          
-        case 'wraparound':
-          const existingPayment = data.existingMortgagePayment || 0;
-          const wrapPayment = data.loanAmount > 0 ? 
-            (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
-            (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
-          monthlyPI = wrapPayment;
-          calculations.existingMortgagePayment = existingPayment;
-          calculations.wrapAroundSpread = wrapPayment - existingPayment;
-          break;
-          
-        case 'lease_option':
-        case 'lease_purchase':
-          monthlyPI = data.leaseAmount || 0;
-          actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
-          calculations.rentCredit = data.rentCredit || 0;
-          calculations.optionPeriod = data.optionPeriod || 0;
-          break;
-          
-        case 'cash':
-          monthlyPI = 0;
-          actualCashInvested = data.purchasePrice + (data.rehabCost || 0);
-          break;
-          
-        default:
-          // Traditional financing
-          if (data.loanAmount > 0 && data.interestRate > 0) {
-            const monthlyRate = data.interestRate / 100 / 12;
+    // Calculate for each selected deal type
+    selectedDealTypes.forEach(dealType => {
+      const calculations = {};
+
+      if (dealType === 'rental' || dealType === 'brrrr' || dealType === 'livein') {
+        // Rental Property Calculations
+        const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
+        const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
+                               data.maintenance + data.capex + data.management + 
+                               data.utilities + data.hoa;
+        
+        // Calculate monthly payment based on purchase method
+        let monthlyPI = 0;
+        let actualCashInvested = data.downPayment + (data.rehabCost || 0);
+        
+        // Purchase method specific calculations
+        switch (selectedPurchaseMethod) {
+          case 'subject_to':
+            monthlyPI = data.existingMortgagePayment || 0;
+            actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
+            break;
             
-            if (data.hasBaloonPayment) {
-              if (data.paymentType === 'interest_only') {
-                monthlyPI = data.loanAmount * monthlyRate;
-              } else if (data.paymentType === 'partial_amortization') {
-                const amortMonths = (data.amortizationPeriod || 30) * 12;
-                monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-                           (Math.pow(1 + monthlyRate, amortMonths) - 1);
-              } else {
-                const balloonMonths = data.balloonTerm * 12;
-                monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
-                           (Math.pow(1 + monthlyRate, balloonMonths) - 1);
-              }
-            } else {
+          case 'seller_finance':
+            if (data.loanAmount > 0 && data.interestRate > 0) {
+              const monthlyRate = data.interestRate / 100 / 12;
               const loanMonths = data.loanTerm * 12;
               monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
                          (Math.pow(1 + monthlyRate, loanMonths) - 1);
             }
-          }
-      }
-      
-      const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
-      const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
-      const annualCashFlow = monthlyCashFlow * 12;
-      
-      // Calculate balloon payment if applicable
-      let balloonPaymentAmount = 0;
-      if (data.hasBaloonPayment && data.loanAmount > 0 && selectedPurchaseMethod !== 'subject_to') {
-        if (data.paymentType === 'interest_only') {
-          balloonPaymentAmount = data.loanAmount;
-        } else if (data.paymentType === 'partial_amortization') {
-          const monthlyRate = data.interestRate / 100 / 12;
-          const amortMonths = (data.amortizationPeriod || 30) * 12;
-          const balloonMonths = data.balloonTerm * 12;
-          const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
-                                (Math.pow(1 + monthlyRate, amortMonths) - 1);
-          
-          const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
-                                  monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
-          balloonPaymentAmount = Math.max(0, remainingBalance);
-        } else {
-          balloonPaymentAmount = data.balloonAmount || data.loanAmount;
+            break;
+            
+          case 'wraparound':
+            const existingPayment = data.existingMortgagePayment || 0;
+            const wrapPayment = data.loanAmount > 0 ? 
+              (data.loanAmount * (data.interestRate / 100 / 12) * Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12)) /
+              (Math.pow(1 + data.interestRate / 100 / 12, data.loanTerm * 12) - 1) : 0;
+            monthlyPI = wrapPayment;
+            calculations.existingMortgagePayment = existingPayment;
+            calculations.wrapAroundSpread = wrapPayment - existingPayment;
+            break;
+            
+          case 'lease_option':
+          case 'lease_purchase':
+            monthlyPI = data.leaseAmount || 0;
+            actualCashInvested = (data.optionFee || 0) + (data.rehabCost || 0);
+            calculations.rentCredit = data.rentCredit || 0;
+            calculations.optionPeriod = data.optionPeriod || 0;
+            break;
+            
+          case 'cash':
+            monthlyPI = 0;
+            actualCashInvested = data.purchasePrice + (data.rehabCost || 0);
+            break;
+            
+          default:
+            // Traditional financing
+            if (data.loanAmount > 0 && data.interestRate > 0) {
+              const monthlyRate = data.interestRate / 100 / 12;
+              
+              if (data.hasBaloonPayment) {
+                if (data.paymentType === 'interest_only') {
+                  monthlyPI = data.loanAmount * monthlyRate;
+                } else if (data.paymentType === 'partial_amortization') {
+                  const amortMonths = (data.amortizationPeriod || 30) * 12;
+                  monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                             (Math.pow(1 + monthlyRate, amortMonths) - 1);
+                } else {
+                  const balloonMonths = data.balloonTerm * 12;
+                  monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, balloonMonths)) /
+                             (Math.pow(1 + monthlyRate, balloonMonths) - 1);
+                }
+              } else {
+                const loanMonths = data.loanTerm * 12;
+                monthlyPI = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) /
+                           (Math.pow(1 + monthlyRate, loanMonths) - 1);
+              }
+            }
         }
+        
+        const totalMonthlyExpenses = monthlyExpenses + monthlyPI;
+        const monthlyCashFlow = monthlyIncome - totalMonthlyExpenses;
+        const annualCashFlow = monthlyCashFlow * 12;
+        
+        // Calculate balloon payment if applicable
+        let balloonPaymentAmount = 0;
+        if (data.hasBaloonPayment && data.loanAmount > 0 && selectedPurchaseMethod !== 'subject_to') {
+          if (data.paymentType === 'interest_only') {
+            balloonPaymentAmount = data.loanAmount;
+          } else if (data.paymentType === 'partial_amortization') {
+            const monthlyRate = data.interestRate / 100 / 12;
+            const amortMonths = (data.amortizationPeriod || 30) * 12;
+            const balloonMonths = data.balloonTerm * 12;
+            const monthlyPayment = (data.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, amortMonths)) /
+                                  (Math.pow(1 + monthlyRate, amortMonths) - 1);
+            
+            const remainingBalance = data.loanAmount * Math.pow(1 + monthlyRate, balloonMonths) - 
+                                    monthlyPayment * ((Math.pow(1 + monthlyRate, balloonMonths) - 1) / monthlyRate);
+            balloonPaymentAmount = Math.max(0, remainingBalance);
+          } else {
+            balloonPaymentAmount = data.balloonAmount || data.loanAmount;
+          }
+        }
+        
+        // Key Metrics
+        calculations.dealType = dealType;
+        calculations.monthlyCashFlow = monthlyCashFlow;
+        calculations.annualCashFlow = annualCashFlow;
+        calculations.capRate = data.purchasePrice > 0 ? ((monthlyIncome * 12 - monthlyExpenses * 12) / data.purchasePrice) * 100 : 0;
+        calculations.cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
+        calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
+        calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
+        calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
+        
+        // Purchase method specific data
+        calculations.purchaseMethod = selectedPurchaseMethod;
+        calculations.actualCashInvested = actualCashInvested;
+        calculations.hasBaloonPayment = data.hasBaloonPayment;
+        calculations.balloonPaymentAmount = balloonPaymentAmount;
+        calculations.balloonTerm = data.balloonTerm;
+        calculations.paymentType = data.paymentType;
+        calculations.monthlyPI = monthlyPI;
+        
+        // Break-even analysis
+        calculations.breakEvenRent = totalMonthlyExpenses;
+        calculations.monthlyIncome = monthlyIncome;
+        calculations.totalMonthlyExpenses = totalMonthlyExpenses;
+        calculations.totalCashInvested = actualCashInvested;
+        
+        if (data.hasBaloonPayment) {
+          calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
+        }
+        
+      } else if (dealType === 'flip') {
+        const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
+        const totalCommission = data.arv * (data.totalCommissionPercent / 100);
+        const totalSellingCosts = data.sellingCosts + totalCommission;
+        const netProfit = data.arv - totalInvestment - totalSellingCosts;
+        const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
+        
+        calculations.dealType = dealType;
+        calculations.totalInvestment = totalInvestment;
+        calculations.netProfit = netProfit;
+        calculations.roi = roi;
+        calculations.arv = data.arv;
+        calculations.totalCosts = totalInvestment + totalSellingCosts;
+        calculations.totalCommission = totalCommission;
+        calculations.totalSellingCosts = totalSellingCosts;
+        calculations.purchaseMethod = selectedPurchaseMethod;
+        
+      } else if (dealType === 'wholesale') {
+        const profit = data.assignmentFee;
+        const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
+        
+        calculations.dealType = dealType;
+        calculations.profit = profit;
+        calculations.roi = roi;
+        calculations.contractPrice = data.contractPrice;
+        calculations.assignmentFee = data.assignmentFee;
+        calculations.purchaseMethod = selectedPurchaseMethod;
       }
-      
-      // Key Metrics
-      calculations.monthlyCashFlow = monthlyCashFlow;
-      calculations.annualCashFlow = annualCashFlow;
-      calculations.capRate = data.purchasePrice > 0 ? ((monthlyIncome * 12 - monthlyExpenses * 12) / data.purchasePrice) * 100 : 0;
-      calculations.cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
-      calculations.onePercentRule = data.purchasePrice > 0 ? (data.monthlyRent / data.purchasePrice) * 100 : 0;
-      calculations.grossRentMultiplier = data.monthlyRent > 0 ? data.purchasePrice / (data.monthlyRent * 12) : 0;
-      calculations.dscr = monthlyPI > 0 ? monthlyIncome / monthlyPI : 0;
-      
-      // Purchase method specific data
-      calculations.purchaseMethod = selectedPurchaseMethod;
-      calculations.actualCashInvested = actualCashInvested;
-      calculations.hasBaloonPayment = data.hasBaloonPayment;
-      calculations.balloonPaymentAmount = balloonPaymentAmount;
-      calculations.balloonTerm = data.balloonTerm;
-      calculations.paymentType = data.paymentType;
-      calculations.monthlyPI = monthlyPI;
-      
-      // Break-even analysis
-      calculations.breakEvenRent = totalMonthlyExpenses;
-      calculations.monthlyIncome = monthlyIncome;
-      calculations.totalMonthlyExpenses = totalMonthlyExpenses;
-      calculations.totalCashInvested = actualCashInvested;
-      
-      if (data.hasBaloonPayment) {
-        calculations.balloonPaymentPerMonth = balloonPaymentAmount / (data.balloonTerm * 12);
-      }
-      
-    } else if (selectedDealTypes[0] === 'flip') {
-      const totalInvestment = data.purchasePrice + data.rehabCost + data.holdingCosts;
-      const totalCommission = data.arv * (data.totalCommissionPercent / 100);
-      const totalSellingCosts = data.sellingCosts + totalCommission;
-      const netProfit = data.arv - totalInvestment - totalSellingCosts;
-      const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
-      
-      calculations.totalInvestment = totalInvestment;
-      calculations.netProfit = netProfit;
-      calculations.roi = roi;
-      calculations.arv = data.arv;
-      calculations.totalCosts = totalInvestment + totalSellingCosts;
-      calculations.totalCommission = totalCommission;
-      calculations.totalSellingCosts = totalSellingCosts;
-      calculations.purchaseMethod = selectedPurchaseMethod;
-      
-    } else if (selectedDealTypes[0] === 'wholesale') {
-      const profit = data.assignmentFee;
-      const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
-      
-      calculations.profit = profit;
-      calculations.roi = roi;
-      calculations.contractPrice = data.contractPrice;
-      calculations.assignmentFee = data.assignmentFee;
-      calculations.purchaseMethod = selectedPurchaseMethod;
-    }
 
-    setResults(calculations);
+      allResults[dealType] = calculations;
+    });
+
+    setResults(allResults);
   }, [formData, selectedDealTypes, selectedPurchaseMethod]);
 
   const renderInputField = (label, field, type = 'number', prefix = '$') => (
