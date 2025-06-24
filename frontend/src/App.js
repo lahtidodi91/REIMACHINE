@@ -648,7 +648,7 @@ function RealEstateCalculator() {
         </div>
       )}
       
-      {selectedDealType === 'wholesale' && (
+      {selectedDealTypes[0] === 'wholesale' && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h4 className="text-lg font-semibold mb-4 text-gray-800">Wholesale Analysis</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
