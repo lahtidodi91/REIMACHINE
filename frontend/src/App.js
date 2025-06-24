@@ -283,7 +283,7 @@ function RealEstateCalculator() {
       calculations.totalSellingCosts = totalSellingCosts;
       calculations.purchaseMethod = selectedPurchaseMethod;
       
-    } else if (selectedDealType === 'wholesale') {
+    } else if (selectedDealTypes[0] === 'wholesale') {
       const profit = data.assignmentFee;
       const roi = data.contractPrice > 0 ? (profit / data.contractPrice) * 100 : 0;
       
