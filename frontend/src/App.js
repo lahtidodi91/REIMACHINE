@@ -769,7 +769,7 @@ function RealEstateCalculator() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Purchase Method</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Purchase Methods to Compare</h2>
           
           <div className="flex justify-center mb-6">
             <div className="bg-gray-100 rounded-lg p-1">
