@@ -824,7 +824,7 @@ function RealEstateCalculator() {
 
           {renderCreativeFinancingInputs()}
 
-          {(selectedDealType === 'rental' || selectedDealType === 'brrrr' || selectedDealType === 'livein') && (
+          {(selectedDealTypes[0] === 'rental' || selectedDealTypes[0] === 'brrrr' || selectedDealTypes[0] === 'livein') && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Rental Details</h3>
               {renderRentalInputs()}
