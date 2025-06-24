@@ -713,23 +713,49 @@ function RealEstateCalculator() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Deal Type</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Select Deal Types to Compare</h2>
+          <p className="text-sm text-gray-600 mb-4">Select multiple deal types to compare side-by-side analysis</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {dealTypes[activeTab].map(deal => (
               <button
                 key={deal.id}
-                onClick={() => setSelectedDealTypes([deal.id])}
+                onClick={() => {
+                  if (selectedDealTypes.includes(deal.id)) {
+                    // Remove if already selected (but keep at least one)
+                    if (selectedDealTypes.length > 1) {
+                      setSelectedDealTypes(prev => prev.filter(id => id !== deal.id));
+                    }
+                  } else {
+                    // Add to selection
+                    setSelectedDealTypes(prev => [...prev, deal.id]);
+                  }
+                }}
                 className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                  selectedDealTypes[0] === deal.id
+                  selectedDealTypes.includes(deal.id)
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div className="text-2xl mb-2">{deal.icon}</div>
                 <div className="font-medium text-sm">{deal.label}</div>
+                {selectedDealTypes.includes(deal.id) && (
+                  <div className="text-xs text-blue-600 mt-1">✓ Selected</div>
+                )}
               </button>
             ))}
           </div>
+          
+          {selectedDealTypes.length > 1 && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Comparing {selectedDealTypes.length} deal types:</strong> {
+                  selectedDealTypes.map(id => 
+                    dealTypes[activeTab].find(d => d.id === id)?.label
+                  ).join(', ')
+                }
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
