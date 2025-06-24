@@ -604,7 +604,7 @@ function RealEstateCalculator() {
         Investment Analysis Results
       </h3>
       
-      {selectedDealType === 'flip' && (
+      {selectedDealTypes[0] === 'flip' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-lg font-semibold mb-4 text-gray-800">Fix & Flip Analysis</h4>
