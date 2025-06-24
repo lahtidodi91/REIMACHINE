@@ -718,9 +718,9 @@ function RealEstateCalculator() {
             {dealTypes[activeTab].map(deal => (
               <button
                 key={deal.id}
-                onClick={() => setSelectedDealType(deal.id)}
+                onClick={() => setSelectedDealTypes([deal.id])}
                 className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                  selectedDealType === deal.id
+                  selectedDealTypes[0] === deal.id
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
