@@ -140,11 +140,13 @@ function RealEstateCalculator() {
 
     const allResults = {};
 
-    // Calculate for each selected deal type
+    // Calculate for each combination of deal type + purchase method
     selectedDealTypes.forEach(dealType => {
-      const calculations = {};
+      selectedPurchaseMethods.forEach(purchaseMethod => {
+        const calculations = {};
+        const resultKey = `${dealType}_${purchaseMethod}`;
 
-      if (dealType === 'rental' || dealType === 'brrrr' || dealType === 'livein') {
+        if (dealType === 'rental' || dealType === 'brrrr' || dealType === 'livein') {
         // Rental Property Calculations
         const monthlyIncome = data.monthlyRent * (1 - (data.vacancyRate / 100)) + (data.otherIncome || 0);
         const monthlyExpenses = (data.propertyTaxes / 12) + (data.insurance / 12) + 
