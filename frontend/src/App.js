@@ -304,7 +304,7 @@ function RealEstateCalculator() {
         calculations.purchaseMethod = selectedPurchaseMethod;
       }
 
-      allResults[dealType] = calculations;
+      allResults[resultKey] = calculations;
     });
 
     setResults(allResults);
